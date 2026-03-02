@@ -1,4 +1,4 @@
-# Open Skill ZH - 社交媒体内容运营自动化
+# social-content-ops - 社交媒体内容运营自动化
 
 <p align="center">
   <strong>🤖 AI驱动的内容抓取、策划、发布与数据分析系统</strong>
@@ -14,7 +14,7 @@
 
 ## 🎯 项目简介
 
-**Open Skill ZH** 是一个专为中文用户设计的社交媒体内容运营自动化系统，作为 [OpenClaw](https://openclaw.ai) 的 Skill 运行。支持从小红书抓取优质内容，经过 AI 改编后发布到 Reddit、Pinterest、Discord 等平台，并提供完整的数据分析功能。
+**social-content-ops** 是一个专为中文用户设计的社交媒体内容运营自动化系统，作为 [OpenClaw](https://openclaw.ai) 的 Skill 运行。支持从小红书抓取优质内容，经过 AI 改编后发布到 Reddit、Pinterest、Discord 等平台，并提供完整的数据分析功能。
 
 ### 核心特性
 
