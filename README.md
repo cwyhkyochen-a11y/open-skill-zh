@@ -239,6 +239,41 @@ python scripts/facebook_publish.py \
   --message "Hello Page"
 ```
 
+#### Pinterest 发布
+
+```bash
+# 添加 Pinterest 账号
+npx tsx scripts/add-pinterest-account.ts
+
+# 获取 Access Token: https://developers.pinterest.com/apps/
+
+# 列出 Boards
+python scripts/pinterest_publish.py \
+  --token YOUR_TOKEN \
+  --list-boards
+
+# 发布 Pin
+python scripts/pinterest_publish.py \
+  --token YOUR_TOKEN \
+  --board-id BOARD_ID \
+  --title "Pin Title" \
+  --description "Pin description" \
+  --link "https://example.com" \
+  --image-url "https://example.com/image.jpg"
+
+# 创建新 Board
+python scripts/pinterest_publish.py \
+  --token YOUR_TOKEN \
+  --create-board "My New Board"
+
+# 获取 Pin Analytics
+python scripts/pinterest_publish.py \
+  --token YOUR_TOKEN \
+  --analytics PIN_ID \
+  --start-date 2024-01-01 \
+  --end-date 2024-01-31
+```
+
 #### 通用发布流程
 
 ```bash

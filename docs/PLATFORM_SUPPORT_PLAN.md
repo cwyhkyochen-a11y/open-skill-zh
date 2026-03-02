@@ -9,7 +9,7 @@
 | **Facebook** | P1 | facebook-sdk | 自建 facebook_publish.py | ✅ 已完成 |
 | **Threads** | P2 | threads-api / CDP | 需调研 | 📝 待开发 |
 | **Reddit** | P2 | PRAW / API | 规划中 | 📝 待开发 |
-| **Pinterest** | P2 | pinterest-api | 规划中 | 📝 待开发 |
+| **Pinterest** | P2 | Pinterest API v5 | 自建 pinterest_publish.py | ✅ 已完成 |
 
 ---
 
@@ -97,6 +97,60 @@ python scripts/facebook_publish.py \
 - ✅ 支持文本 + 图片（最多10张）
 - ✅ 支持链接分享
 - ✅ 可列出管理的页面
+
+### 4. Pinterest - 已实现: Pinterest API v5
+
+✅ **状态**: 已完成，脚本位置: `scripts/pinterest_publish.py`
+
+**实现方式**: 使用 Pinterest API v5
+
+**使用方法**:
+```bash
+# 安装依赖
+pip install requests
+
+# 添加账号
+npx tsx scripts/add-pinterest-account.ts
+
+# 发布内容
+python scripts/pinterest_publish.py \
+  --token YOUR_ACCESS_TOKEN \
+  --board-id BOARD_ID \
+  --title "Pin Title" \
+  --description "Pin description" \
+  --link "https://example.com" \
+  --image-url "https://example.com/image.jpg"
+
+# 列出 Boards
+python scripts/pinterest_publish.py \
+  --token YOUR_ACCESS_TOKEN \
+  --list-boards
+
+# 创建 Board
+python scripts/pinterest_publish.py \
+  --token YOUR_ACCESS_TOKEN \
+  --create-board "My New Board"
+
+# 获取 Pin Analytics
+python scripts/pinterest_publish.py \
+  --token YOUR_ACCESS_TOKEN \
+  --analytics PIN_ID \
+  --start-date 2024-01-01 \
+  --end-date 2024-01-31
+```
+
+**获取 Access Token**:
+1. 访问 https://developers.pinterest.com/apps/
+2. 创建应用获取 Client ID 和 Client Secret
+3. OAuth 授权获取 Access Token
+4. 需要权限: `boards:read`, `boards:write`, `pins:read`, `pins:write`
+
+**特性**:
+- ✅ 创建 Pin 到指定 Board
+- ✅ 管理 Boards（创建、列表）
+- ✅ 获取 Pin Analytics（Impressions, Saves, Clicks）
+- ✅ 支持远程图片 URL
+- ✅ 最佳图片比例 2:3（竖图）
 
 ### 5. Threads - 推荐方案: threads-api (非官方)
 
