@@ -28,13 +28,36 @@ Usage:
     # 使用 session 文件（避免重复登录）
     python instagram_publish.py -u myaccount -p mypass \
         --session-file ~/.ig_session.json --caption "Hello" --image photo.jpg
+
+    # 使用代理（解决 SSL/连接问题）
+    python instagram_publish.py -u myaccount -p mypass \
+        --proxy "http://127.0.0.1:7890" \
+        --caption "Hello" --image photo.jpg
+
+故障排除:
+    SSL 错误 (SSLEOFError):
+    - 升级 instagrapi: pip install --upgrade instagrapi
+    - 关闭 VPN 再试
+    - 使用 --proxy 参数指定代理
+    - 检查网络是否能访问 Instagram: curl -I https://i.instagram.com
 """
 
 import argparse
 import json
 import os
 import sys
+import ssl
+import urllib3
 from pathlib import Path
+
+# Disable SSL warnings for compatibility
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+# Fix SSL issues on some systems
+try:
+    ssl._create_default_https_context = ssl._create_unverified_context
+except:
+    pass
 
 # Check if instagrapi is installed
 try:
@@ -54,11 +77,16 @@ except ImportError:
 class InstagramPublisher:
     """Instagram publisher using instagrapi."""
     
-    def __init__(self, username: str, password: str, session_file: str = None):
+    def __init__(self, username: str, password: str, session_file: str = None, proxy: str = None):
         self.username = username
         self.password = password
         self.session_file = session_file or f"~/.ig_session_{username}.json"
+        self.proxy = proxy
         self.client = Client()
+        
+        # Set proxy if provided
+        if proxy:
+            self.client.set_proxy(proxy)
         
     def login(self):
         """Login to Instagram."""
@@ -236,6 +264,7 @@ def main():
     parser.add_argument("--story", action="store_true", help="Post as story")
     parser.add_argument("--session-file", help="Session file path")
     parser.add_argument("--info", action="store_true", help="Show user info and exit")
+    parser.add_argument("--proxy", help="Proxy URL (e.g., http://user:pass@host:port)")
     
     args = parser.parse_args()
     
@@ -243,7 +272,8 @@ def main():
     publisher = InstagramPublisher(
         username=args.username,
         password=args.password,
-        session_file=args.session_file
+        session_file=args.session_file,
+        proxy=args.proxy
     )
     
     try:
