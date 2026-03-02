@@ -1,0 +1,119 @@
+{
+  "name": "content-ops-mcp",
+  "version": "0.2.0",
+  "description": "Social Content Ops MCP Server - Unified publishing for 6 platforms",
+  "tools": [
+    {
+      "name": "publish_xiaohongshu",
+      "description": "Publish content to Xiaohongshu (Little Red Book)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "title": {"type": "string", "description": "Note title"},
+          "content": {"type": "string", "description": "Note content"},
+          "images": {"type": "array", "items": {"type": "string"}, "description": "Image URLs or paths"},
+          "account_id": {"type": "string", "description": "Target account ID from database"}
+        },
+        "required": ["title", "content", "images"]
+      }
+    },
+    {
+      "name": "publish_x",
+      "description": "Publish tweet to X (Twitter)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "text": {"type": "string", "description": "Tweet text"},
+          "images": {"type": "array", "items": {"type": "string"}, "description": "Image paths"},
+          "account_id": {"type": "string", "description": "Target account ID"}
+        },
+        "required": ["text"]
+      }
+    },
+    {
+      "name": "publish_instagram",
+      "description": "Publish to Instagram (photo/video/story/carousel)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "caption": {"type": "string", "description": "Post caption"},
+          "image": {"type": "string", "description": "Single image path"},
+          "images": {"type": "array", "items": {"type": "string"}, "description": "Multiple images for carousel"},
+          "video": {"type": "string", "description": "Video path"},
+          "story": {"type": "boolean", "description": "Post as story"},
+          "account_id": {"type": "string", "description": "Target account ID"}
+        },
+        "required": ["caption"]
+      }
+    },
+    {
+      "name": "publish_facebook",
+      "description": "Publish to Facebook (profile or page)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "message": {"type": "string", "description": "Post message"},
+          "photo": {"type": "string", "description": "Photo path"},
+          "photos": {"type": "array", "items": {"type": "string"}, "description": "Multiple photos"},
+          "link": {"type": "string", "description": "Link to share"},
+          "page_id": {"type": "string", "description": "Page ID (omit for profile)"},
+          "account_id": {"type": "string", "description": "Target account ID"}
+        },
+        "required": ["message"]
+      }
+    },
+    {
+      "name": "publish_pinterest",
+      "description": "Publish Pin to Pinterest",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "title": {"type": "string", "description": "Pin title"},
+          "description": {"type": "string", "description": "Pin description"},
+          "image_url": {"type": "string", "description": "Image URL (must be publicly accessible)"},
+          "link": {"type": "string", "description": "Destination link"},
+          "board_id": {"type": "string", "description": "Target board ID"},
+          "account_id": {"type": "string", "description": "Target account ID"}
+        },
+        "required": ["title", "image_url", "board_id"]
+      }
+    },
+    {
+      "name": "publish_threads",
+      "description": "Publish to Threads",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "text": {"type": "string", "description": "Thread text (max 500 chars)"},
+          "image_url": {"type": "string", "description": "Image URL"},
+          "video_url": {"type": "string", "description": "Video URL"},
+          "carousel_images": {"type": "array", "items": {"type": "string"}, "description": "Multiple images for carousel"},
+          "account_id": {"type": "string", "description": "Target account ID"}
+        },
+        "required": ["text"]
+      }
+    },
+    {
+      "name": "list_accounts",
+      "description": "List all configured social media accounts",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "platform": {"type": "string", "enum": ["xiaohongshu", "x", "instagram", "facebook", "pinterest", "threads"], "description": "Filter by platform"}
+        }
+      }
+    },
+    {
+      "name": "get_account_info",
+      "description": "Get account information and status",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "account_id": {"type": "string", "description": "Account ID"},
+          "platform": {"type": "string", "enum": ["instagram", "facebook", "pinterest", "threads"], "description": "Platform for API-based accounts"}
+        },
+        "required": ["account_id"]
+      }
+    }
+  ]
+}
