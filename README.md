@@ -1,4 +1,4 @@
-# social-content-ops - 社交媒体内容运营自动化
+# Social Content Ops - 社交媒体内容运营自动化
 
 <p align="center">
   <strong>🤖 AI驱动的内容抓取、策划、发布与数据分析系统</strong>
@@ -8,20 +8,26 @@
   <img src="https://img.shields.io/badge/OpenClaw-Skill-blue" alt="OpenClaw Skill">
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
   <img src="https://img.shields.io/badge/Platform-Xiaohongshu%20%7C%20Reddit%20%7C%20Pinterest-orange" alt="Platform">
+  <img src="https://img.shields.io/badge/Integration-Baoyu%20Skills-purple" alt="Baoyu Skills">
 </p>
 
 ---
 
 ## 🎯 项目简介
 
-**social-content-ops** 是一个专为中文用户设计的社交媒体内容运营自动化系统，作为 [OpenClaw](https://openclaw.ai) 的 Skill 运行。支持从小红书抓取优质内容，经过 AI 改编后发布到 Reddit、Pinterest、Discord 等平台，并提供完整的数据分析功能。
+**Social Content Ops** 是一个社交媒体内容运营自动化系统，作为 [OpenClaw](https://openclaw.ai) 的 Skill 运行。支持从小红书抓取优质内容，经过 AI 改编后发布到 Reddit、Pinterest、Discord 等平台，并提供完整的数据分析功能。
 
-### 核心特性
+**核心亮点：** 集成 [baoyu-skills](https://github.com/JimLiu/baoyu-skills) 的 AI 配图生成能力，支持自动生成小红书风格的多图系列和信息图。
+
+---
+
+## ✨ 核心特性
 
 | 特性 | 说明 |
 |------|------|
 | 📥 **智能抓取** | 支持小红书搜索抓取，自动评估内容质量 |
 | 🤖 **AI 改编** | 基于语料生成适配目标平台的内容 |
+| 🎨 **AI 配图** | 集成 baoyu-skills，自动生成小红书风格配图 |
 | 👥 **人机协作** | 关键节点需人工确认，确保内容质量 |
 | 📊 **数据分析** | 自动追踪发布内容的互动数据，生成复盘报告 |
 | 🗄️ **本地存储** | SQLite + Drizzle ORM，无需外部数据库 |
@@ -29,10 +35,39 @@
 
 ---
 
+## 🎨 AI 配图生成
+
+本项目集成 [baoyu-skills](https://github.com/JimLiu/baoyu-skills) 的配图生成能力：
+
+### 支持的生成方式
+
+| 工具 | 适用平台 | 特点 |
+|------|----------|------|
+| **xhs-images** | 小红书 | 1-10张系列图，9种风格 × 6种布局 |
+| **infographic** | Reddit/Pinterest | 专业信息图，20种布局 × 17种风格 |
+| **cover-image** | 通用 | 封面图，5维定制系统 |
+
+### 视觉风格
+
+- **cute** (可爱) | **fresh** (清新) | **warm** (温暖)
+- **bold** (大胆) | **minimal** (极简) | **retro** (复古)
+- **pop** (流行) | **notion** | **chalkboard** (黑板)
+
+### 布局类型
+
+- **sparse** (稀疏1-2点) - 封面、金句
+- **balanced** (平衡3-4点) - 常规内容
+- **dense** (密集5-8点) - 知识卡片
+- **list** (列表) - 清单、排行
+- **comparison** (对比) - 优劣分析
+- **flow** (流程) - 步骤、时间线
+
+---
+
 ## 📁 项目结构
 
 ```
-open-skill-zh/
+social-content-ops/
 ├── 📄 SKILL.md                    # 主技能文档（OpenClaw 使用）
 ├── 📄 README.md                   # 本文件
 ├── 📂 src/
@@ -44,6 +79,8 @@ open-skill-zh/
 │   ├── create-crawl-task.ts       # 创建抓取任务
 │   ├── show-crawl-results.ts      # 查看抓取结果
 │   ├── approve-all.ts             # 批量审核通过
+│   ├── generate-images.ts         # AI 配图生成（新增）
+│   ├── configure-account-style.ts # 配置账号视觉风格（新增）
 │   └── ...                        # 更多脚本
 ├── 📂 redbookskills/              # 小红书发布子技能
 │   ├── SKILL.md                   # 子技能文档
@@ -54,6 +91,8 @@ open-skill-zh/
 │   ├── database-schema.md         # 数据库表结构详解
 │   ├── detailed-workflow.md       # 完整工序设计
 │   └── sop-workflows.md           # SOP 流程文档
+├── 📂 docs/                       # 新增文档
+│   └── BAOYU_INTEGRATION_PLAN.md  # baoyu-skills 集成计划
 ├── 📄 QUICKSTART.md               # 10分钟快速上手指南
 ├── 📄 USER_WORKFLOW.md            # 完整用户操作手册
 ├── 📄 package.json                # Node.js 依赖
@@ -74,11 +113,14 @@ open-skill-zh/
 
 ```bash
 # 克隆仓库
-git clone https://github.com/cwyhkyochen-a11y/open-skill-zh.git
-cd open-skill-zh
+git clone https://github.com/cwyhkyochen-a11y/social-content-ops.git
+cd social-content-ops
 
 # 安装 Node.js 依赖
 npm install
+
+# 安装 baoyu-skills (AI 配图生成)
+npx skills add jimliu/baoyu-skills
 
 # 生成并执行数据库迁移
 npx drizzle-kit generate
@@ -143,11 +185,34 @@ npx tsx scripts/create-publish-task.ts \
 # 生成内容（AI 改编）
 npx tsx scripts/generate-content.ts --task-id <publish-task-id>
 
+# 生成配图（AI 生成 - 集成 baoyu-skills）
+npx tsx scripts/generate-images.ts --task-id <publish-task-id>
+
+# 查看生成的内容和配图
+npx tsx scripts/review-publish-content.ts --task-id <publish-task-id>
+
 # 执行发布
 npx tsx scripts/execute-publish.ts --task-id <publish-task-id>
 ```
 
-### 第三步：数据复盘
+### 第三步：配置视觉风格
+
+```bash
+# 查看所有可用风格
+npx tsx scripts/configure-account-style.ts --list-styles
+
+# 查看所有账号
+npx tsx scripts/configure-account-style.ts --list-all
+
+# 配置账号视觉风格
+npx tsx scripts/configure-account-style.ts \
+  --account-id <account-id> \
+  --style cute \
+  --layout list \
+  --aspect-ratio 9:16
+```
+
+### 第四步：数据复盘
 
 ```bash
 # 抓取昨日数据
@@ -164,10 +229,10 @@ npx tsx scripts/generate-report.ts --period 7d
 | 表名 | 用途 | 关键字段 |
 |------|------|----------|
 | `source_accounts` | 信息源账号（小红书等） | platform, login_status, daily_quota |
-| `target_accounts` | 被运营账号（Reddit等） | platform, api_config, positioning |
+| `target_accounts` | 被运营账号（Reddit等） | platform, api_config, positioning, **visual_style**, **layout_preference** |
 | `crawl_tasks` | 抓取任务 | status, query_list, target_count |
 | `crawl_results` | 抓取结果 | source_url, content, quality_score, curation_status |
-| `publish_tasks` | 发布任务 | status, content, scheduled_at |
+| `publish_tasks` | 发布任务 | status, content, **generated_images**, scheduled_at |
 | `publish_metrics_daily` | 内容每日数据 | metric_date, reddit_score, engagement_rate |
 | `target_accounts_metrics_daily` | 账号整体每日数据 | followers_change, engagement_rate |
 
@@ -180,8 +245,8 @@ npx tsx scripts/generate-report.ts --period 7d
 **用户说**: "抓一批春季穿搭的语料"  
 **Agent 执行**: 创建抓取任务 → 执行搜索 → 质量评估 → 返回候选列表 → 等待确认
 
-**用户说**: "把第1和第3条发布到 Reddit"  
-**Agent 执行**: 创建发布任务 → AI 生成内容 → 等待样稿确认 → 执行发布
+**用户说**: "把第1和第3条发布到 Reddit，配信息图"  
+**Agent 执行**: 创建发布任务 → AI 生成内容 → **AI 生成配图** → 等待样稿确认 → 执行发布
 
 ---
 
@@ -195,6 +260,7 @@ npx tsx scripts/generate-report.ts --period 7d
 | [references/database-schema.md](./references/database-schema.md) | 数据库表结构详解 | 开发者 |
 | [references/detailed-workflow.md](./references/detailed-workflow.md) | 多 Agent 协作工序设计 | 开发者 |
 | [references/sop-workflows.md](./references/sop-workflows.md) | 7个标准操作流程 | 运营人员 |
+| [docs/BAOYU_INTEGRATION_PLAN.md](./docs/BAOYU_INTEGRATION_PLAN.md) | baoyu-skills 集成计划 | 开发者 |
 
 ---
 
@@ -214,6 +280,12 @@ npx tsx scripts/generate-report.ts --period 7d
 - 请妥善保管 cookies 和 API 密钥
 - 建议定期更换登录凭据
 - 遵守各平台的使用条款
+
+### baoyu-skills 依赖
+
+- 需要先安装 baoyu-skills: `npx skills add jimliu/baoyu-skills`
+- 需要配置 AI 服务的 API key
+- 图片生成需要一定时间，请耐心等待
 
 ---
 
@@ -244,6 +316,7 @@ npx tsx scripts/generate-report.ts --period 7d
 ## 🔗 相关项目
 
 - [OpenClaw](https://openclaw.ai) - 开源 AI Agent 框架
+- [baoyu-skills](https://github.com/JimLiu/baoyu-skills) - AI 内容生成技能集
 - [xiaohongshu-mcp](https://github.com/xpzouying/xiaohongshu-mcp) - 小红书 MCP 服务
 
 ---

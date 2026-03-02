@@ -1,4 +1,9 @@
 {
-  "slug": "content-ops-v2",
-  "version": "0.1.0"
+  "slug": "social-content-ops",
+  "name": "Social Content Ops",
+  "version": "0.2.0",
+  "description": "AI-powered social media content operations automation",
+  "dependencies": [
+    "jimliu/baoyu-skills"
+  ]
 }

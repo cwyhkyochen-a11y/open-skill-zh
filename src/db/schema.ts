@@ -73,6 +73,25 @@ export const targetAccounts = sqliteTable('target_accounts', {
   // Discord: { channel_mappings: {...} }
   platformConfig: text('platform_config', { mode: 'json' }),
   
+  // --- 视觉风格配置字段 (集成 baoyu-skills) ---
+  
+  /** 视觉风格 - baoyu-skills 配图风格
+   * cute(可爱), fresh(清新), warm(温暖), bold(大胆), 
+   * minimal(极简), retro(复古), pop(流行), notion, chalkboard(黑板)
+   */
+  visualStyle: text('visual_style').$default(() => 'cute'),
+  
+  /** 布局偏好 - 信息密度布局
+   * sparse(稀疏1-2点), balanced(平衡3-4点), dense(密集5-8点),
+   * list(列表), comparison(对比), flow(流程)
+   */
+  layoutPreference: text('layout_preference').$default(() => 'balanced'),
+  
+  /** 图片宽高比 - 配图比例
+   * 16:9(横屏), 9:16(竖屏), 1:1(方形), 2.35:1(宽屏)
+   */
+  imageAspectRatio: text('image_aspect_ratio').$default(() => '9:16'),
+  
   // --- 时间戳字段 ---
   
   /** 创建时间 - 账号档案首次创建时间 */
@@ -432,6 +451,16 @@ export const publishTasks = sqliteTable('publish_tasks', {
    * }
    */
   adaptation: text('adaptation', { mode: 'json' }),
+  
+  /** 生成的配图路径JSON - 集成 baoyu-skills 生成的图片
+   * {
+   *   images: ["/path/to/img1.png", "/path/to/img2.png"],
+   *   style: "cute",
+   *   layout: "list",
+   *   generated_at: "2024-01-01T00:00:00Z"
+   * }
+   */
+  generatedImages: text('generated_images', { mode: 'json' }),
   
   // --- 时间安排字段 ---
   
