@@ -1,0 +1,46 @@
+{
+  "version": "0.2.0",
+  "name": "Social Content Ops v0.2.0",
+  "slug": "social-content-ops",
+  "status": "archived",
+  "archived_at": "2026-03-02T23:19:00+08:00",
+  "description": "AI-powered social media content operations automation - 5 platform support edition",
+  "platforms": {
+    "xiaohongshu": {
+      "name": "小与丈",
+      "crawl": true,
+      "publish": true,
+      "method": "MCP + CDP"
+    },
+    "x": {
+      "name": "X (Twitter)",
+      "crawl": false,
+      "publish": true,
+      "method": "CDP (Chrome DevTools Protocol)"
+    },
+    "instagram": {
+      "name": "Instagram",
+      "crawl": false,
+      "publish": true,
+      "method": "instagrapi API"
+    },
+    "facebook": {
+      "name": "Facebook",
+      "crawl": false,
+      "publish": true,
+      "method": "facebook-sdk (Graph API)"
+    },
+    "pinterest": {
+      "name": "Pinterest",
+      "crawl": false,
+      "publish": true,
+      "method": "Pinterest API v5"
+    },
+    "threads": {
+      "name": "Threads",
+      "crawl": false,
+      "publish": true,
+      "method": "Meta Threads API (Graph API)"
+    }
+  }
+}
