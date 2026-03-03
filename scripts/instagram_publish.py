@@ -26,7 +26,8 @@ Usage:
         --story --image story.jpg
 
     # 使用 session 文件（避免重复登录）
-    python instagram_publish.py -u myaccount -p mypass \
+    # 密码建议通过文件提供，避免出现在命令历史中
+    python instagram_publish.py -u myaccount --password-file /path/to/ig.password \
         --session-file ~/.ig_session.json --caption "Hello" --image photo.jpg
 
     # 使用代理（解决 SSL/连接问题）
@@ -256,7 +257,8 @@ class InstagramPublisher:
 def main():
     parser = argparse.ArgumentParser(description="Publish to Instagram")
     parser.add_argument("-u", "--username", required=True, help="Instagram username")
-    parser.add_argument("-p", "--password", required=True, help="Instagram password")
+    parser.add_argument("-p", "--password", required=False, help="Instagram password")
+    parser.add_argument("--password-file", required=False, help="Path to file containing Instagram password")
     parser.add_argument("-c", "--caption", default="", help="Post caption")
     parser.add_argument("--image", help="Single image path")
     parser.add_argument("--images", nargs="+", help="Multiple image paths (album)")
@@ -267,11 +269,22 @@ def main():
     parser.add_argument("--proxy", help="Proxy URL (e.g., http://user:pass@host:port)")
     
     args = parser.parse_args()
-    
+
+    # Resolve password
+    password = args.password
+    if not password and args.password_file:
+        from _secrets import read_secret_file
+        password = read_secret_file(args.password_file)
+
+    # instagrapi still requires a password to login (even with a session file).
+    if not password:
+        print("❌ 需要提供 --password 或 --password-file（instagrapi 登录需要密码）")
+        sys.exit(1)
+
     # Create publisher
     publisher = InstagramPublisher(
         username=args.username,
-        password=args.password,
+        password=password,
         session_file=args.session_file,
         proxy=args.proxy
     )

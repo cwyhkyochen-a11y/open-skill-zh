@@ -412,7 +412,8 @@ class ThreadsPublisher:
 
 def main():
     parser = argparse.ArgumentParser(description="Publish to Threads")
-    parser.add_argument("--token", "-t", required=True, help="Threads Access Token")
+    parser.add_argument("--token", "-t", required=False, help="Threads Access Token")
+    parser.add_argument("--token-file", required=False, help="Path to file containing Threads access token")
     
     # Content args
     parser.add_argument("--text", help="Post text content")
@@ -432,8 +433,19 @@ def main():
     
     args = parser.parse_args()
     
+    # Resolve token
+    if not args.token and not args.token_file:
+        print("❌ 需要提供 --token 或 --token-file")
+        sys.exit(1)
+
+    if args.token_file:
+        from _secrets import read_secret_file
+        token = read_secret_file(args.token_file)
+    else:
+        token = args.token
+
     # Create publisher
-    publisher = ThreadsPublisher(access_token=args.token)
+    publisher = ThreadsPublisher(access_token=token)
     
     try:
         # Show user info

@@ -87,6 +87,10 @@ node scripts/test-image-generation.ts
 
 ## 二、账号配置流程
 
+> ✅ 无 UI / ECS 推荐闭环：**账号档案 → 同步脚本 → secrets 文件 → 发布脚本读取**
+> 
+> 详情见：`docs/ACCOUNT_SYNC.md`
+
 ### 流程图
 
 ```

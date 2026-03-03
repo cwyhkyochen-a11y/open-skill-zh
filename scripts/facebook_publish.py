@@ -267,7 +267,8 @@ class FacebookPublisher:
 
 def main():
     parser = argparse.ArgumentParser(description="Publish to Facebook")
-    parser.add_argument("--token", "-t", required=True, help="Facebook Access Token")
+    parser.add_argument("--token", "-t", required=False, help="Facebook Access Token")
+    parser.add_argument("--token-file", required=False, help="Path to file containing Facebook access token")
     parser.add_argument("--page-id", help="Page ID (for publishing to page)")
     parser.add_argument("--message", "-m", help="Post message/text")
     parser.add_argument("--photo", help="Single photo path")
@@ -277,10 +278,21 @@ def main():
     parser.add_argument("--list-pages", action="store_true", help="List managed pages")
     
     args = parser.parse_args()
-    
+
+    # Resolve token
+    if not args.token and not args.token_file:
+        print("❌ 需要提供 --token 或 --token-file")
+        sys.exit(1)
+
+    if args.token_file:
+        from _secrets import read_secret_file
+        token = read_secret_file(args.token_file)
+    else:
+        token = args.token
+
     # Create publisher
     publisher = FacebookPublisher(
-        access_token=args.token,
+        access_token=token,
         page_id=args.page_id
     )
     
