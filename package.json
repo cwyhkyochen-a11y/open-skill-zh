@@ -10,7 +10,7 @@
     "db:studio": "drizzle-kit studio",
     "db:init": "node --loader ts-node/esm src/db/init.ts",
     "db:seed": "node --loader ts-node/esm src/db/seed.ts",
-    "console": "node --loader ts-node/esm src/console-server.ts"
+    "console": "node src/console-server.mjs"
   },
   "keywords": [
     "content-ops",

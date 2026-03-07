@@ -1,0 +1,56 @@
+import express from 'express';
+import cookieParser from 'cookie-parser';
+import path from 'path';
+import fs from 'fs';
+import crypto from 'crypto';
+import { randomUUID } from 'crypto';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const Database = require('better-sqlite3');
+
+const app = express();
+const PORT = Number(process.env.CONTENT_OPS_CONSOLE_PORT || process.env.PORT || 3210);
+const HOST = process.env.CONTENT_OPS_CONSOLE_HOST || '127.0.0.1';
+const SRC_DIR = path.dirname(new URL(import.meta.url).pathname);
+const ROOT = path.resolve(path.join(SRC_DIR, '..'));
+const WORKSPACE_ROOT = path.resolve(ROOT, '..', '..');
+const PUBLIC_DIR = path.join(ROOT, 'console-public');
+const MEDIA_DIR = path.join(WORKSPACE_ROOT, 'content-ops-workspace', 'console-uploads');
+const DB_PATH = process.env.CONTENT_OPS_DB || path.join(WORKSPACE_ROOT, 'content-ops-workspace', 'data', 'content-ops.db');
+const SESSION_COOKIE = 'content_ops_console_session';
+const SESSION_SECRET = process.env.CONTENT_OPS_CONSOLE_SESSION_SECRET || 'content-ops-console-secret';
+const DEFAULT_USER = process.env.CONTENT_OPS_CONSOLE_USER || 'kyochen';
+const DEFAULT_PASSWORD = process.env.CONTENT_OPS_CONSOLE_PASSWORD || 'kyochen0818';
+const sessions = new Map();
+const db = new Database(DB_PATH, { readonly: false });
+
+fs.mkdirSync(PUBLIC_DIR, { recursive: true });
+fs.mkdirSync(MEDIA_DIR, { recursive: true });
+app.use(cookieParser());
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ extended: true, limit: '20mb' }));
+app.use('/uploads', express.static(MEDIA_DIR));
+
+const safeJsonParse = (value, fallback) => { try { return value ? (typeof value === 'string' ? JSON.parse(value) : value) : fallback; } catch { return fallback; } };
+const signSession = (id) => `${id}.${crypto.createHmac('sha256', SESSION_SECRET).update(id).digest('hex')}`;
+const verifySignedSession = (raw) => { if (!raw) return null; const i = raw.lastIndexOf('.'); if (i <= 0) return null; const id = raw.slice(0, i); const sig = raw.slice(i + 1); const exp = crypto.createHmac('sha256', SESSION_SECRET).update(id).digest('hex'); return sig === exp ? id : null; };
+const requireAuth = (req, res, next) => { const sid = verifySignedSession(req.cookies?.[SESSION_COOKIE]); if (!sid || !sessions.has(sid)) return res.status(401).json({ error: 'unauthorized' }); req.session = sessions.get(sid); next(); };
+const extractAuthorizedAt = (row) => { const api = safeJsonParse(row.api_config, {}); return api.authorized_at || api.created_at || row.created_at || null; };
+const isAccountUsable = (row) => { if (row.status !== 'active') return false; const api = safeJsonParse(row.api_config, {}); if (row.platform === 'x') return !!(api.access_token || api.password || api.refresh_token); return !!(api.access_token || api.token || api.password || api.token_file || api.access_token_file); };
+const normalizePlatformConfig = (row) => { const apiConfig = safeJsonParse(row.api_config, {}); const platformConfig = safeJsonParse(row.platform_config, {}); const summary = ({ x:{maxText:platformConfig.max_chars||280,maxImages:platformConfig.max_images||4,supportsVideo:true,supportsLink:false,threadHint:true}, threads:{maxText:platformConfig.max_text_length||500,maxImages:platformConfig.max_carousel_images||10,supportsVideo:true,supportsLink:false,threadHint:false}, pinterest:{maxText:500,maxImages:1,supportsVideo:false,supportsLink:true,threadHint:false}, facebook:{maxText:63206,maxImages:platformConfig.max_photos_per_post||10,supportsVideo:true,supportsLink:true,threadHint:false}, instagram:{maxText:2200,maxImages:10,supportsVideo:true,supportsLink:false,threadHint:false} })[row.platform] || {maxText:1000,maxImages:4,supportsVideo:true,supportsLink:true,threadHint:false}; return { apiConfig, platformConfig, summary }; };
+const listAccounts = () => db.prepare('select * from target_accounts order by platform, account_name').all().map(r => ({ id:r.id,name:r.account_name,platform:r.platform,homepageUrl:r.homepage_url,authorizedAt:extractAuthorizedAt(r),status:r.status,usable:isAccountUsable(r),accountId:r.account_id,...normalizePlatformConfig(r) }));
+const listPublishRecords = (limit=100) => db.prepare(`select pt.*, ta.account_name, ta.platform, ta.homepage_url from publish_tasks pt left join target_accounts ta on ta.id=pt.target_account_id order by pt.created_at desc limit ?`).all(limit).map(r => { const content=safeJsonParse(r.content,{}); const publishResults=Array.isArray(content.publish_results)?content.publish_results:[]; return { id:r.id,taskName:r.task_name,status:r.status,platform:r.platform,accountName:r.account_name,homepageUrl:r.homepage_url,targetAccountId:r.target_account_id,createdAt:r.created_at,updatedAt:r.updated_at,publishedAt:r.published_at,reviewNotes:r.review_notes,text:content.body||content.text||content.caption||'',title:content.title||'',link:content.link||'',media:Array.isArray(content.media)?content.media:[],content,publishResults,lastResult:publishResults[publishResults.length-1]||null }; });
+const getPublishRecord = (taskId) => listPublishRecords(1000).find(x => x.id === taskId) || null;
+const getAccountDetail = (accountId) => { const row = db.prepare('select * from target_accounts where id=? limit 1').get(accountId); if (!row) return null; const recentTasks = db.prepare('select id, task_name, status, content, created_at, published_at, review_notes from publish_tasks where target_account_id=? order by created_at desc limit 20').all(accountId).map(r => ({...r, content:safeJsonParse(r.content,{})})); return { id:row.id,name:row.account_name,platform:row.platform,homepageUrl:row.homepage_url,authorizedAt:extractAuthorizedAt(row),status:row.status,usable:isAccountUsable(row),accountId:row.account_id,positioning:row.positioning,targetAudience:row.target_audience,contentDirection:row.content_direction,...normalizePlatformConfig(row),recentTasks }; };
+
+app.post('/api/login', (req,res)=>{ const {username,password}=req.body||{}; if(username!==DEFAULT_USER||password!==DEFAULT_PASSWORD) return res.status(401).json({error:'invalid credentials'}); const sid=randomUUID(); sessions.set(sid,{username,createdAt:new Date().toISOString()}); res.cookie(SESSION_COOKIE,signSession(sid),{httpOnly:true,sameSite:'lax',secure:false,maxAge:7*24*60*60*1000}); res.json({ok:true,username}); });
+app.post('/api/logout', (req,res)=>{ const sid=verifySignedSession(req.cookies?.[SESSION_COOKIE]); if(sid) sessions.delete(sid); res.clearCookie(SESSION_COOKIE); res.json({ok:true}); });
+app.get('/api/session', (req,res)=>{ const sid=verifySignedSession(req.cookies?.[SESSION_COOKIE]); const s=sid?sessions.get(sid):null; res.json({authenticated:!!s,username:s?.username||null}); });
+app.get('/api/accounts', requireAuth, (_req,res)=>res.json({items:listAccounts()}));
+app.get('/api/accounts/:accountId', requireAuth, (req,res)=>{ const item=getAccountDetail(req.params.accountId); if(!item) return res.status(404).json({error:'account not found'}); res.json({item}); });
+app.get('/api/publish-records', requireAuth, (req,res)=>res.json({items:listPublishRecords(Number(req.query.limit||100))}));
+app.get('/api/publish/:taskId', requireAuth, (req,res)=>{ const item=getPublishRecord(req.params.taskId); if(!item) return res.status(404).json({error:'task not found'}); res.json({item}); });
+app.post('/api/upload-base64', requireAuth, (req,res)=>{ try { const {filename,contentType,data}=req.body||{}; if(!data) return res.status(400).json({error:'missing data'}); const safeName=String(filename||`upload-${Date.now()}`).replace(/[^a-zA-Z0-9._-]/g,'_'); const ext=path.extname(safeName)||(String(contentType||'').includes('video')?'.mp4':'.bin'); const finalName=path.basename(safeName,path.extname(safeName))+ext; const outPath=path.join(MEDIA_DIR,`${Date.now()}-${finalName}`); const base64=String(data).includes(',')?String(data).split(',').pop():String(data); fs.writeFileSync(outPath,Buffer.from(base64,'base64')); res.json({ok:true,path:outPath,url:`/uploads/${path.basename(outPath)}`}); } catch (e) { res.status(500).json({error:e?.message||String(e)}); } });
+app.get('/api/health', (_req,res)=>res.json({ok:true,host:HOST,port:PORT}));
+app.use((_req,res)=>res.sendFile(path.join(PUBLIC_DIR,'index.html')));
+app.listen(PORT, HOST, ()=>console.log(`content-ops console listening on http://${HOST}:${PORT}`));
