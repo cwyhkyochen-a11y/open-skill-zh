@@ -201,14 +201,10 @@ python skills/content-ops/scripts/publish-dispatch.py --task-id <TASK_ID> --exec
 
 ## 公网部署示例
 
-如果使用 Caddy 挂到 `kyochen.art/contentops/`：
+如果使用 Caddy 反代到子路径（例如 `/contentops/`）：
 
 ```caddy
-xauth.kyochen.art {
-    reverse_proxy 127.0.0.1:3000
-}
-
-kyochen.art {
+your-domain.com {
     redir /contentops /contentops/ 308
 
     handle_path /contentops/* {
