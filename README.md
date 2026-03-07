@@ -107,7 +107,7 @@ npm run console
 默认登录账号：
 
 - 用户名：`kyochen`
-- 密码：`kyochen0818`
+- 密码：`kyochen28`
 
 可通过环境变量覆盖：
 
@@ -115,7 +115,7 @@ npm run console
 CONTENT_OPS_CONSOLE_HOST=127.0.0.1
 CONTENT_OPS_CONSOLE_PORT=3210
 CONTENT_OPS_CONSOLE_USER=kyochen
-CONTENT_OPS_CONSOLE_PASSWORD=kyochen0818
+CONTENT_OPS_CONSOLE_PASSWORD=kyochen28
 CONTENT_OPS_CONSOLE_SESSION_SECRET=change-me
 ```
 

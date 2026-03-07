@@ -20,7 +20,7 @@ const DB_PATH = process.env.CONTENT_OPS_DB || path.join(WORKSPACE_ROOT, 'content
 const SESSION_COOKIE = 'content_ops_console_session';
 const SESSION_SECRET = process.env.CONTENT_OPS_CONSOLE_SESSION_SECRET || 'content-ops-console-secret';
 const DEFAULT_USER = process.env.CONTENT_OPS_CONSOLE_USER || 'kyochen';
-const DEFAULT_PASSWORD = process.env.CONTENT_OPS_CONSOLE_PASSWORD || 'kyochen0818';
+const DEFAULT_PASSWORD = process.env.CONTENT_OPS_CONSOLE_PASSWORD || 'kyochen28';
 const sessions = new Map();
 const db = new Database(DB_PATH, { readonly: false });
 
