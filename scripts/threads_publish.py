@@ -430,6 +430,7 @@ def main():
     parser.add_argument("--analytics", "-a", help="Get analytics for thread ID")
     parser.add_argument("--start-date", help="Analytics start date (YYYY-MM-DD)")
     parser.add_argument("--end-date", help="Analytics end date (YYYY-MM-DD)")
+    parser.add_argument("--json", action="store_true", help="Output result as pure JSON")
     
     args = parser.parse_args()
     
@@ -491,8 +492,11 @@ def main():
             else:
                 result = publisher.publish_text(args.text)
                 
-            print("\n📤 发布结果:")
-            print(json.dumps(result, indent=2, ensure_ascii=False))
+            if args.json:
+                print(json.dumps(result, ensure_ascii=False))
+            else:
+                print("\n📤 发布结果:")
+                print(json.dumps(result, indent=2, ensure_ascii=False))
             sys.exit(0 if result.get("status") == "published" else 1)
             
         # No action specified

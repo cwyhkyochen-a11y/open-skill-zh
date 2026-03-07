@@ -43,4 +43,6 @@ python skills/content-ops/scripts/publish-dispatch.py --platform x --account mai
 - 从 `publish_tasks.content` 读取 `title/body/media/link/platform_specific`
 - 从 `generated_images.images` 自动补充图片
 - X 平台自动在长文本时加 `--thread`
-- 成功发布后，平台结果回写到 `publish_tasks.content.publish_results`
+- Threads / Facebook / Pinterest 在 task 模式下会要求发布器返回标准 JSON 结果
+- 成功发布后，平台结果统一回写到 `publish_tasks.content.publish_results`
+- 当前可作为 task-driven publishing 样板的除了 X 之外，还包括 Threads；Facebook / Pinterest 也已接入同一回写链路

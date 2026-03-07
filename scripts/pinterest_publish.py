@@ -391,6 +391,7 @@ def main():
     
     # User info
     parser.add_argument("--info", action="store_true", help="Show user info")
+    parser.add_argument("--json", action="store_true", help="Output result as pure JSON")
     
     args = parser.parse_args()
     
@@ -473,8 +474,11 @@ def main():
                 image_file=args.image_file
             )
             
-            print("\n📌 结果:")
-            print(json.dumps(result, indent=2, ensure_ascii=False))
+            if args.json:
+                print(json.dumps(result, ensure_ascii=False))
+            else:
+                print("\n📌 结果:")
+                print(json.dumps(result, indent=2, ensure_ascii=False))
             sys.exit(0 if result.get("status") == "published" else 1)
             
         # No action specified

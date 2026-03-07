@@ -59,6 +59,7 @@ def load_publish_task(task_id: str):
         """,
         (task_id,),
     ).fetchone()
+    conn.close()
     if not row:
         raise ConfigError(f"Publish task not found: {task_id}")
     data = dict(row)
@@ -69,6 +70,43 @@ def load_publish_task(task_id: str):
             except Exception:
                 pass
     return data
+
+
+def update_publish_task_result(task_id: str, result: dict):
+    if not DB_PATH.exists():
+        raise ConfigError(f"DB not found: {DB_PATH}")
+
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
+    row = conn.execute("select content from publish_tasks where id = ?", (task_id,)).fetchone()
+    if not row:
+        conn.close()
+        raise ConfigError(f"Publish task not found when updating result: {task_id}")
+
+    content = row[0]
+    if isinstance(content, str):
+        try:
+            content = json.loads(content)
+        except Exception:
+            content = {}
+    elif content is None:
+        content = {}
+
+    history = content.get("publish_results") if isinstance(content.get("publish_results"), list) else []
+    result = dict(result)
+    result.setdefault("publishedAt", __import__('datetime').datetime.utcnow().replace(microsecond=0).isoformat() + 'Z')
+    content["publish_results"] = history + [result]
+
+    conn.execute(
+        """
+        update publish_tasks
+        set content = ?, status = 'published', published_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+        where id = ?
+        """,
+        (json.dumps(content, ensure_ascii=False), task_id),
+    )
+    conn.commit()
+    conn.close()
 
 
 def derive_job_from_task(task):
@@ -82,6 +120,7 @@ def derive_job_from_task(task):
         images.extend(content.get("media"))
     if isinstance(generated_images.get("images"), list):
         images.extend(generated_images.get("images"))
+    platform_specific = content.get("platform_specific") or {}
     return {
         "platform": platform,
         "account": task.get("account_name"),
@@ -92,7 +131,8 @@ def derive_job_from_task(task):
         "images": images,
         "video": content.get("video") or content.get("video_url"),
         "link": content.get("link"),
-        "board_id": (content.get("platform_specific") or {}).get("pinterest", {}).get("board") or None,
+        "board_id": platform_specific.get("pinterest", {}).get("board") or None,
+        "platform_specific": platform_specific,
     }
 
 
@@ -130,15 +170,20 @@ def build_instagram(job, acct):
 def build_pinterest(job, acct):
     script = SCRIPTS_DIR / "pinterest_publish.py"
     token = acct.get("access_token")
-    if not token:
-        raise ConfigError("Pinterest access_token missing in config")
+    token_file = acct.get("access_token_file") or acct.get("token_file")
+    if not token and not token_file:
+        raise ConfigError("Pinterest access_token/token_file missing in config")
     board_id = job.get("board_id") or acct.get("default_board_id")
     if not board_id:
         raise ConfigError("Pinterest requires board_id or default_board_id")
     title = job.get("title")
     if not title:
         raise ConfigError("Pinterest requires title")
-    cmd = ["python3", str(script), "--token", token, "--board-id", board_id, "--title", title]
+    cmd = ["python3", str(script), "--board-id", board_id, "--title", title, "--json"]
+    if token_file:
+        cmd += ["--token-file", token_file]
+    else:
+        cmd += ["--token", token]
     text = job.get("text")
     if text:
         cmd += ["--description", text]
@@ -147,8 +192,12 @@ def build_pinterest(job, acct):
         cmd += ["--link", link]
     images = job.get("images") or []
     if len(images) != 1:
-        raise ConfigError("Pinterest expects exactly one local image")
-    cmd += ["--image-file", images[0]]
+        raise ConfigError("Pinterest expects exactly one image/url")
+    image = images[0]
+    if isinstance(image, str) and (image.startswith("http://") or image.startswith("https://")):
+        cmd += ["--image-url", image]
+    else:
+        cmd += ["--image-file", image]
     return cmd
 
 
@@ -191,18 +240,27 @@ def build_x_api(job, acct):
 def build_facebook(job, acct):
     script = SCRIPTS_DIR / "facebook_publish.py"
     token = acct.get("access_token")
-    if not token:
-        raise ConfigError("Facebook access_token missing in config")
+    token_file = acct.get("access_token_file") or acct.get("token_file")
+    if not token and not token_file:
+        raise ConfigError("Facebook access_token/token_file missing in config")
     text = job.get("text")
-    if not text:
-        raise ConfigError("Facebook requires text")
-    cmd = ["python3", str(script), "--token", token, "--message", text]
+    if not text and not (job.get("images") or []):
+        raise ConfigError("Facebook requires text or images")
+    cmd = ["python3", str(script), "--json"]
+    if token_file:
+        cmd += ["--token-file", token_file]
+    else:
+        cmd += ["--token", token]
+    if text:
+        cmd += ["--message", text]
     page_id = acct.get("page_id")
     if acct.get("is_page") and page_id:
         cmd += ["--page-id", page_id]
     images = job.get("images") or []
-    if images:
+    if len(images) == 1:
         cmd += ["--photo", images[0]]
+    elif len(images) > 1:
+        cmd += ["--photos", *images]
     link = job.get("link")
     if link:
         cmd += ["--link", link]
@@ -212,19 +270,92 @@ def build_facebook(job, acct):
 def build_threads(job, acct):
     script = SCRIPTS_DIR / "threads_publish.py"
     token = acct.get("access_token")
-    if not token:
-        raise ConfigError("Threads access_token missing in config")
+    token_file = acct.get("access_token_file") or acct.get("token_file")
+    if not token and not token_file:
+        raise ConfigError("Threads access_token/token_file missing in config")
     text = job.get("text")
     if not text:
         raise ConfigError("Threads requires text")
-    cmd = ["python3", str(script), "--token", token, "--text", text]
+    cmd = ["python3", str(script), "--text", text, "--json"]
+    if token_file:
+        cmd += ["--token-file", token_file]
+    else:
+        cmd += ["--token", token]
     images = job.get("images") or []
     video = job.get("video")
     if video:
         cmd += ["--video-url", video]
-    elif images:
+    elif len(images) > 1:
+        cmd += ["--carousel-images", *images]
+    elif len(images) == 1:
         cmd += ["--image-url", images[0]]
     return cmd
+
+
+def normalize_publish_result(platform, task, job, parsed_output):
+    if not isinstance(parsed_output, dict):
+        raise ConfigError(f"{platform} publisher did not return JSON object")
+
+    url = parsed_output.get("url") or parsed_output.get("permalink")
+    platform_post_id = parsed_output.get("platformPostId") or parsed_output.get("platform_post_id") or parsed_output.get("id")
+    text_preview = parsed_output.get("textPreview") or parsed_output.get("text_preview") or (job.get("text") or "")[:140]
+    media_items = []
+    for item in (job.get("images") or []):
+        media_items.append({
+            "type": "image",
+            "url": item if isinstance(item, str) and item.startswith(("http://", "https://")) else None,
+            "localPath": item if isinstance(item, str) and not item.startswith(("http://", "https://")) else None,
+        })
+    if job.get("video"):
+        video = job["video"]
+        media_items.append({
+            "type": "video",
+            "url": video if isinstance(video, str) and video.startswith(("http://", "https://")) else None,
+            "localPath": video if isinstance(video, str) and not video.startswith(("http://", "https://")) else None,
+        })
+
+    if job.get("video"):
+        media_type = "video"
+    elif len(job.get("images") or []) > 1:
+        media_type = "mixed"
+    elif len(job.get("images") or []) == 1:
+        media_type = "image"
+    else:
+        media_type = "text"
+
+    return {
+        "platform": platform,
+        "accountId": task.get("target_account_id") or job.get("account_id"),
+        "platformPostId": platform_post_id,
+        "url": url,
+        "textPreview": text_preview,
+        "raw": parsed_output,
+        "media": {
+            "type": media_type,
+            "count": len(media_items),
+            "items": media_items,
+        },
+    }
+
+
+def run_and_parse_json(cmd, platform):
+    result = subprocess.run(cmd, text=True, capture_output=True)
+    if result.returncode != 0:
+        if result.stdout:
+            print(result.stdout)
+        if result.stderr:
+            print(result.stderr, file=sys.stderr)
+        raise SystemExit(result.returncode)
+
+    stdout = (result.stdout or "").strip()
+    if not stdout:
+        raise ConfigError(f"{platform} publisher returned empty output")
+
+    try:
+        return json.loads(stdout)
+    except json.JSONDecodeError as e:
+        print(stdout)
+        raise ConfigError(f"{platform} publisher did not return valid JSON: {e}")
 
 
 def main():
@@ -242,6 +373,7 @@ def main():
     ap.add_argument("--execute", action="store_true", help="Actually execute the built command")
     args = ap.parse_args()
 
+    task = None
     if args.task_id:
         task = load_publish_task(args.task_id)
         job = derive_job_from_task(task)
@@ -263,6 +395,7 @@ def main():
             "video": args.video,
             "link": args.link,
             "board_id": args.board_id,
+            "platform_specific": {},
         }
         cfg = load_config()
         acct = get_account(cfg, args.platform, args.account)
@@ -287,8 +420,19 @@ def main():
         print("\nNot executed. Add --execute only after manual review.")
         return 0
 
-    result = subprocess.run(cmd, text=True)
-    raise SystemExit(result.returncode)
+    if platform == 'x' or not task:
+        result = subprocess.run(cmd, text=True)
+        raise SystemExit(result.returncode)
+
+    parsed_output = run_and_parse_json(cmd, platform)
+    normalized = normalize_publish_result(platform, task, job, parsed_output)
+    update_publish_task_result(task["id"], normalized)
+    print(json.dumps({
+        "status": "published",
+        "taskId": task["id"],
+        "result": normalized,
+    }, ensure_ascii=False, indent=2))
+    return 0
 
 
 if __name__ == "__main__":

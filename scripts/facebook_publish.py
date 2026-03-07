@@ -276,6 +276,7 @@ def main():
     parser.add_argument("--link", help="Link to share")
     parser.add_argument("--info", action="store_true", help="Show user/page info")
     parser.add_argument("--list-pages", action="store_true", help="List managed pages")
+    parser.add_argument("--json", action="store_true", help="Output result as pure JSON")
     
     args = parser.parse_args()
 
@@ -328,8 +329,11 @@ def main():
             result = publisher.publish_text(args.message, args.link)
             
         # Output result
-        print("\n📊 结果:")
-        print(json.dumps(result, indent=2, ensure_ascii=False))
+        if args.json:
+            print(json.dumps(result, ensure_ascii=False))
+        else:
+            print("\n📊 结果:")
+            print(json.dumps(result, indent=2, ensure_ascii=False))
         
         if result.get("status") == "published":
             sys.exit(0)
