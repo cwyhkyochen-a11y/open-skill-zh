@@ -31,10 +31,13 @@ export async function saveXTokens(targetAccountId: string, token: XTokenBundle, 
 }
 
 export async function getXTokens(targetAccountId: string) {
-  const row = await db.query.targetAccounts.findFirst({
-    where: eq(targetAccounts.id, targetAccountId),
-  });
-  const oauth = (row?.apiConfig as any)?.oauth;
+  const rows = await db.select().from(targetAccounts).where(eq(targetAccounts.id, targetAccountId)).limit(1);
+  const row = rows[0] as any;
+  let apiConfig = row?.apiConfig;
+  if (typeof apiConfig === 'string') {
+    try { apiConfig = JSON.parse(apiConfig); } catch {}
+  }
+  const oauth = apiConfig?.oauth;
   return oauth || null;
 }
 
