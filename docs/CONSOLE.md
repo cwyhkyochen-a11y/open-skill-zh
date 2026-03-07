@@ -8,6 +8,7 @@
 - 上传图片/视频并写入本地媒体目录
 - 查看代运营账号列表（只读）
 - 查看发帖记录（成功 / 失败 / 待执行）
+- 登录后访问，避免裸奔在本地或公网
 
 ## 启动
 
@@ -21,11 +22,32 @@ npm run console
 - Host: `127.0.0.1`
 - Port: `3210`
 
+默认登录账号：
+
+- 用户名：`kyochen`
+- 密码：`kyochen0818`
+
 可通过环境变量覆盖：
+
+- `CONTENT_OPS_CONSOLE_HOST`
+- `CONTENT_OPS_CONSOLE_PORT`
+- `CONTENT_OPS_CONSOLE_USER`
+- `CONTENT_OPS_CONSOLE_PASSWORD`
+- `CONTENT_OPS_CONSOLE_SESSION_SECRET`
+
+示例：
 
 ```bash
 CONTENT_OPS_CONSOLE_HOST=0.0.0.0 CONTENT_OPS_CONSOLE_PORT=3210 npm run console
 ```
+
+## 登录与权限
+
+当前为单用户登录：
+
+- 通过 cookie session 维持登录态
+- 未登录不能访问账号、发布、上传、执行接口
+- 适合作为本地控制台或经反代后的小范围使用
 
 ## 页面能力
 
@@ -38,6 +60,12 @@ CONTENT_OPS_CONSOLE_HOST=0.0.0.0 CONTENT_OPS_CONSOLE_PORT=3210 npm run console
 - 主页地址
 - 授权时间（从 `api_config.authorized_at/created_at` 推断）
 - 当前是否可用
+
+并支持：
+
+- 平台筛选
+- 可用性筛选
+- 关键字搜索
 
 ### 2. 手动发帖
 
@@ -67,6 +95,14 @@ CONTENT_OPS_CONSOLE_HOST=0.0.0.0 CONTENT_OPS_CONSOLE_PORT=3210 npm run console
 - 发布结果链接
 - 平台原生 post id
 - 失败说明 / 备注
+
+并支持：
+
+- 平台筛选
+- 状态筛选
+- 关键字搜索
+- 默认每 15 秒自动刷新
+- 手动点击“执行发布”
 
 ## 媒体上传
 
