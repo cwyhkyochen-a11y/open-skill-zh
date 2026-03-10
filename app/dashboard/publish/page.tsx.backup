@@ -1,0 +1,489 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ContentTypeSelector } from '@/components/content-type-selector';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
+import { CONTENT_TYPES, CONTENT_TYPE_FIELDS, type ContentTypeId, getSupportedPlatforms } from '@/lib/content-types';
+import { PLATFORM_NAMES, PLATFORM_ICONS } from '@/lib/platform-fields';
+
+interface Account {
+  id: string;
+  accountName: string;
+  platform: string;
+  status: string;
+  authMode: string;
+}
+
+export default function PublishPage() {
+  const [step, setStep] = useState(1);
+  const [contentType, setContentType] = useState<ContentTypeId | null>(null);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
+  const [formData, setFormData] = useState<Record<string, any>>({});
+  const [loading, setLoading] = useState(false);
+
+  // 加载账号列表
+  useEffect(() => {
+    loadAccounts();
+  }, []);
+
+  const loadAccounts = async () => {
+    try {
+      const res = await fetch('/api/accounts');
+      const data = await res.json();
+      const activeAccounts = (data.accounts || []).filter(
+        (acc: Account) => acc.status === 'active'
+      );
+      setAccounts(activeAccounts);
+    } catch (error) {
+      toast.error('加载账号失败');
+    }
+  };
+
+  // 根据内容类型筛选账号
+  const getFilteredAccounts = () => {
+    if (!contentType) return [];
+    const supportedPlatforms = getSupportedPlatforms(contentType);
+    return accounts.filter((acc) => supportedPlatforms.includes(acc.platform));
+  };
+
+  // 按平台分组账号
+  const groupAccountsByPlatform = () => {
+    const filtered = getFilteredAccounts();
+    return filtered.reduce((acc, account) => {
+      if (!acc[account.platform]) {
+        acc[account.platform] = [];
+      }
+      acc[account.platform].push(account);
+      return acc;
+    }, {} as Record<string, Account[]>);
+  };
+
+  // 切换账号选择
+  const toggleAccount = (accountId: string) => {
+    setSelectedAccounts((prev) =>
+      prev.includes(accountId)
+        ? prev.filter((id) => id !== accountId)
+        : [...prev, accountId]
+    );
+  };
+
+  // 更新表单数据
+  const updateFormData = (fieldName: string, value: any) => {
+    setFormData((prev) => ({
+      ...prev,
+      [fieldName]: value,
+    }));
+  };
+
+  // 渲染表单字段
+  const renderField = (fieldName: string, config: any) => {
+    const value = formData[fieldName] || '';
+
+    switch (config.type) {
+      case 'text':
+        return (
+          <div key={fieldName} className="space-y-2">
+            <Label htmlFor={fieldName} className="text-white">
+              {config.label}
+              {config.required && <span className="text-red-500 ml-1">*</span>}
+            </Label>
+            <Input
+              id={fieldName}
+              placeholder={config.placeholder}
+              value={value}
+              onChange={(e) => updateFormData(fieldName, e.target.value)}
+              maxLength={config.maxLength}
+              className="bg-slate-900 border-slate-700 text-white"
+            />
+            {config.maxLength && (
+              <p className="text-xs text-slate-400 text-right">
+                {value.length} / {config.maxLength}
+              </p>
+            )}
+          </div>
+        );
+
+      case 'textarea':
+        return (
+          <div key={fieldName} className="space-y-2">
+            <Label htmlFor={fieldName} className="text-white">
+              {config.label}
+              {config.required && <span className="text-red-500 ml-1">*</span>}
+            </Label>
+            <Textarea
+              id={fieldName}
+              placeholder={config.placeholder}
+              value={value}
+              onChange={(e) => updateFormData(fieldName, e.target.value)}
+              maxLength={config.maxLength}
+              rows={6}
+              className="bg-slate-900 border-slate-700 text-white"
+            />
+            {config.maxLength && (
+              <p className="text-xs text-slate-400 text-right">
+                {value.length} / {config.maxLength}
+              </p>
+            )}
+          </div>
+        );
+
+      case 'file':
+        return (
+          <div key={fieldName} className="space-y-2">
+            <Label htmlFor={fieldName} className="text-white">
+              {config.label}
+              {config.required && <span className="text-red-500 ml-1">*</span>}
+            </Label>
+            <Input
+              id={fieldName}
+              type="file"
+              accept={config.accept}
+              multiple={config.multiple}
+              onChange={(e) => updateFormData(fieldName, e.target.files)}
+              className="bg-slate-900 border-slate-700 text-white"
+            />
+            {config.maxFiles && (
+              <p className="text-xs text-slate-400">
+                最多上传 {config.maxFiles} 个文件
+              </p>
+            )}
+          </div>
+        );
+
+      case 'url':
+        return (
+          <div key={fieldName} className="space-y-2">
+            <Label htmlFor={fieldName} className="text-white">
+              {config.label}
+              {config.required && <span className="text-red-500 ml-1">*</span>}
+            </Label>
+            <Input
+              id={fieldName}
+              type="url"
+              placeholder={config.placeholder}
+              value={value}
+              onChange={(e) => updateFormData(fieldName, e.target.value)}
+              className="bg-slate-900 border-slate-700 text-white"
+            />
+          </div>
+        );
+
+      case 'tags':
+        return (
+          <div key={fieldName} className="space-y-2">
+            <Label htmlFor={fieldName} className="text-white">
+              {config.label}
+              {config.required && <span className="text-red-500 ml-1">*</span>}
+            </Label>
+            <Input
+              id={fieldName}
+              placeholder={config.placeholder}
+              value={value}
+              onChange={(e) => updateFormData(fieldName, e.target.value)}
+              className="bg-slate-900 border-slate-700 text-white"
+            />
+            <p className="text-xs text-slate-400">用逗号分隔多个标签</p>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  // 验证表单
+  const validateForm = () => {
+    if (!contentType) {
+      toast.error('请选择内容类型');
+      return false;
+    }
+
+    if (selectedAccounts.length === 0) {
+      toast.error('请至少选择一个账号');
+      return false;
+    }
+
+    const fields = CONTENT_TYPE_FIELDS[contentType];
+    for (const [fieldName, config] of Object.entries(fields)) {
+      if (config.required && !formData[fieldName]) {
+        toast.error(`请填写 ${config.label}`);
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  // 发布内容
+  const handlePublish = async () => {
+    if (!validateForm()) return;
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accountIds: selectedAccounts,
+          contentType: contentType,
+          content: formData,
+        }),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || '发布失败');
+      }
+
+      const result = await res.json();
+
+      if (result.failed > 0) {
+        toast.warning(`发布完成：${result.success} 成功，${result.failed} 失败`);
+      } else {
+        toast.success(`发布成功！已发布到 ${result.success} 个账号`);
+      }
+
+      // 重置表单
+      setStep(1);
+      setContentType(null);
+      setSelectedAccounts([]);
+      setFormData({});
+    } catch (error: any) {
+      toast.error(error.message || '发布失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const accountsByPlatform = groupAccountsByPlatform();
+  const filteredAccounts = getFilteredAccounts();
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-white mb-2">发布工作台</h1>
+        <p className="text-slate-400">选择内容类型，创建并发布内容到多个平台</p>
+      </div>
+
+      {/* 步骤指示器 */}
+      <div className="flex items-center gap-4 mb-8">
+        {[
+          { num: 1, label: '选择类型' },
+          { num: 2, label: '选择账号' },
+          { num: 3, label: '编辑内容' },
+          { num: 4, label: '发布' },
+        ].map((s) => (
+          <div key={s.num} className="flex items-center gap-2">
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
+                step >= s.num
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-700 text-slate-400'
+              }`}
+            >
+              {s.num}
+            </div>
+            <span
+              className={`text-sm ${
+                step >= s.num ? 'text-white' : 'text-slate-400'
+              }`}
+            >
+              {s.label}
+            </span>
+            {s.num < 4 && (
+              <div className="w-8 h-0.5 bg-slate-700 mx-2" />
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* 步骤 1: 选择内容类型 */}
+      {step === 1 && (
+        <div className="space-y-6">
+          <ContentTypeSelector
+            selectedType={contentType || undefined}
+            onSelect={(type) => {
+              setContentType(type);
+              setSelectedAccounts([]);
+              setFormData({});
+            }}
+          />
+          <div className="flex justify-end">
+            <Button
+              onClick={() => setStep(2)}
+              disabled={!contentType}
+              size="lg"
+            >
+              下一步：选择账号
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* 步骤 2: 选择账号 */}
+      {step === 2 && contentType && (
+        <div className="space-y-6">
+          <Card className="bg-slate-800/50 border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white">
+                选择账号 - {CONTENT_TYPES[contentType].label}
+              </CardTitle>
+              <CardDescription className="text-slate-400">
+                已选择 {selectedAccounts.length} 个账号 · 支持 {filteredAccounts.length} 个账号
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {filteredAccounts.length === 0 ? (
+                <div className="text-center py-12 text-slate-400">
+                  <p className="mb-4">没有支持该内容类型的账号</p>
+                  <Button
+                    variant="outline"
+                    onClick={() => (window.location.href = '/dashboard/accounts')}
+                  >
+                    去添加账号
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {Object.entries(accountsByPlatform).map(([platform, platformAccounts]) => (
+                    <div key={platform} className="space-y-2">
+                      <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
+                        {PLATFORM_ICONS[platform]} {PLATFORM_NAMES[platform]}
+                      </h3>
+                      <div className="grid md:grid-cols-2 gap-2">
+                        {platformAccounts.map((account) => (
+                          <div
+                            key={account.id}
+                            className="flex items-center space-x-3 p-3 bg-slate-900/50 rounded-lg border border-slate-700 hover:border-slate-600 cursor-pointer"
+                            onClick={() => toggleAccount(account.id)}
+                          >
+                            <Checkbox
+                              checked={selectedAccounts.includes(account.id)}
+                              onCheckedChange={() => toggleAccount(account.id)}
+                            />
+                            <div className="flex-1">
+                              <p className="text-white font-medium">{account.accountName}</p>
+                              <p className="text-xs text-slate-400">
+                                {account.authMode === 'composio' ? 'Composio' : '自定义'} 授权
+                              </p>
+                            </div>
+                            <Badge variant="default">已授权</Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          <div className="flex justify-between">
+            <Button variant="outline" onClick={() => setStep(1)}>
+              上一步
+            </Button>
+            <Button
+              onClick={() => setStep(3)}
+              disabled={selectedAccounts.length === 0}
+              size="lg"
+            >
+              下一步：编辑内容
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* 步骤 3: 编辑内容 */}
+      {step === 3 && contentType && (
+        <div className="space-y-6">
+          <Card className="bg-slate-800/50 border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white">
+                {CONTENT_TYPES[contentType].icon} {CONTENT_TYPES[contentType].label}
+              </CardTitle>
+              <CardDescription className="text-slate-400">
+                填写内容，将发布到 {selectedAccounts.length} 个账号
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {Object.entries(CONTENT_TYPE_FIELDS[contentType]).map(([fieldName, config]) =>
+                renderField(fieldName, config)
+              )}
+            </CardContent>
+          </Card>
+          <div className="flex justify-between">
+            <Button variant="outline" onClick={() => setStep(2)}>
+              上一步
+            </Button>
+            <Button onClick={() => setStep(4)} size="lg">
+              下一步：确认发布
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* 步骤 4: 确认发布 */}
+      {step === 4 && contentType && (
+        <div className="space-y-6">
+          <Card className="bg-slate-800/50 border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white">确认发布</CardTitle>
+              <CardDescription className="text-slate-400">
+                请确认以下信息无误后发布
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm text-slate-400 mb-2">内容类型：</p>
+                <Badge variant="default" className="text-base">
+                  {CONTENT_TYPES[contentType].icon} {CONTENT_TYPES[contentType].label}
+                </Badge>
+              </div>
+              <div>
+                <p className="text-sm text-slate-400 mb-2">发布账号：</p>
+                <div className="flex flex-wrap gap-2">
+                  {selectedAccounts.map((id) => {
+                    const account = accounts.find((a) => a.id === id);
+                    return account ? (
+                      <Badge key={id} variant="outline" className="text-white">
+                        {PLATFORM_ICONS[account.platform]} {account.accountName}
+                      </Badge>
+                    ) : null;
+                  })}
+                </div>
+              </div>
+              <div>
+                <p className="text-sm text-slate-400 mb-2">内容预览：</p>
+                <div className="p-4 bg-slate-900 rounded-lg border border-slate-700">
+                  {Object.entries(formData).map(([key, value]) => (
+                    <div key={key} className="mb-2">
+                      <span className="text-xs text-slate-500">{key}:</span>
+                      <p className="text-white text-sm">
+                        {typeof value === 'string' ? value : JSON.stringify(value)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <div className="flex justify-between">
+            <Button variant="outline" onClick={() => setStep(3)}>
+              上一步
+            </Button>
+            <Button onClick={handlePublish} disabled={loading} size="lg">
+              {loading ? '发布中...' : `发布到 ${selectedAccounts.length} 个账号`}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,241 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: 0.75rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.25rem;
+  --radius-xl: 1.5rem;
+  --radius-2xl: 2rem;
+  --radius-3xl: 2.5rem;
+  --radius-4xl: 3rem;
+}
+
+/* Premium 2026 Design System - Linear/Raycast inspired */
+:root {
+  /* Neutral palette - ultra subtle */
+  --background: 250 250 252;
+  --foreground: 15 23 42;
+  
+  /* Card - barely there */
+  --card: 255 255 255;
+  --card-foreground: 15 23 42;
+  
+  /* Popover */
+  --popover: 255 255 255;
+  --popover-foreground: 15 23 42;
+  
+  /* Primary - single accent color */
+  --primary: 99 102 241;
+  --primary-foreground: 255 255 255;
+  
+  /* Secondary - ghost */
+  --secondary: 248 250 252;
+  --secondary-foreground: 51 65 85;
+  
+  /* Muted - whisper */
+  --muted: 248 250 252;
+  --muted-foreground: 100 116 139;
+  
+  /* Accent - hover state */
+  --accent: 248 250 252;
+  --accent-foreground: 15 23 42;
+  
+  /* Destructive - minimal red */
+  --destructive: 239 68 68;
+  --destructive-foreground: 255 255 255;
+  
+  /* Borders - barely visible */
+  --border: 226 232 240;
+  --input: 226 232 240;
+  
+  /* Ring - focus state */
+  --ring: 99 102 241;
+  
+  /* Charts - monochrome */
+  --chart-1: 99 102 241;
+  --chart-2: 139 92 246;
+  --chart-3: 168 85 247;
+  --chart-4: 192 132 252;
+  --chart-5: 216 180 254;
+  
+  /* Radius - super rounded */
+  --radius: 1rem;
+  
+  /* Sidebar */
+  --sidebar: 255 255 255;
+  --sidebar-foreground: 51 65 85;
+  --sidebar-primary: 99 102 241;
+  --sidebar-primary-foreground: 255 255 255;
+  --sidebar-accent: 248 250 252;
+  --sidebar-accent-foreground: 15 23 42;
+  --sidebar-border: 241 245 249;
+  --sidebar-ring: 99 102 241;
+}
+
+.dark {
+  --background: 15 23 42;
+  --foreground: 248 250 252;
+  --card: 30 41 59;
+  --card-foreground: 248 250 252;
+  --popover: 30 41 59;
+  --popover-foreground: 248 250 252;
+  --primary: 129 140 248;
+  --primary-foreground: 15 23 42;
+  --secondary: 51 65 85;
+  --secondary-foreground: 226 232 240;
+  --muted: 51 65 85;
+  --muted-foreground: 148 163 184;
+  --accent: 51 65 85;
+  --accent-foreground: 248 250 252;
+  --destructive: 248 113 113;
+  --destructive-foreground: 15 23 42;
+  --border: 51 65 85;
+  --input: 51 65 85;
+  --ring: 129 140 248;
+  --sidebar: 30 41 59;
+  --sidebar-foreground: 226 232 240;
+  --sidebar-primary: 129 140 248;
+  --sidebar-primary-foreground: 15 23 42;
+  --sidebar-accent: 51 65 85;
+  --sidebar-accent-foreground: 248 250 252;
+  --sidebar-border: 51 65 85;
+  --sidebar-ring: 129 140 248;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+    letter-spacing: -0.011em;
+  }
+  
+  html {
+    @apply font-sans;
+  }
+  
+  /* Premium interactions */
+  button, a, [role="button"] {
+    @apply transition-all duration-200 ease-out;
+  }
+  
+  button:active, a:active, [role="button"]:active {
+    @apply scale-[0.98];
+  }
+  
+  /* Subtle hover lift */
+  .hover-lift {
+    @apply transition-all duration-200 ease-out;
+  }
+  
+  .hover-lift:hover {
+    @apply -translate-y-0.5 shadow-lg shadow-black/5;
+  }
+  
+  /* Focus states - minimal ring */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary/20 ring-offset-2 ring-offset-background;
+  }
+  
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Custom scrollbar - ultra minimal */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-200 dark:bg-slate-700 rounded-full;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-300 dark:bg-slate-600;
+  }
+}
+
+/* Premium animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out;
+}
+
+.animate-fade-in-scale {
+  animation: fade-in-scale 0.3s ease-out;
+}
+
+/* Stagger delays */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.3s; }
