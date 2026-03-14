@@ -94,6 +94,8 @@ export const CONTENT_TYPE_FIELDS = {
       required: true,
       maxFiles: 10,
     },
+
+
   },
   video: {
     title: {

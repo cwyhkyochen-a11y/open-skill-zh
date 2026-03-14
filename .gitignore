@@ -1,6 +1,30 @@
+# Dependencies
 node_modules/
+
+# Next.js build
 .next/
+
+# Environment & secrets
 .env.local
+.env.production
+
+# Database
 *.db
+*.db-journal
+*.db-wal
+
+# Archives & backups
 *.tar.gz
+*.bak
+*.backup
+*.backup2
+
+# Logs
 *.log
+
+# Uploads (user-generated content)
+public/uploads/
+
+# OS
+.DS_Store
+Thumbs.db

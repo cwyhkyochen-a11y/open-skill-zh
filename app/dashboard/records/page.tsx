@@ -29,7 +29,7 @@ export default function RecordsPage() {
     try {
       const res = await fetch(process.env.NEXT_PUBLIC_APP_URL + '/api/publish/records');
       const data = await res.json();
-      setRecords(data.records || []);
+      setRecords(data.tasks || []);
     } catch (error) {
       toast.error('Failed to load records');
     } finally {

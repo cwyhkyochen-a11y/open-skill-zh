@@ -30,6 +30,8 @@ export default function PublishPage() {
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
+  const [publishProgress, setPublishProgress] = useState<any[]>([]);
+  const [progressDialogOpen, setProgressDialogOpen] = useState(false);
 
   useEffect(() => {
     loadAccounts();
@@ -89,27 +91,13 @@ export default function PublishPage() {
     toast.info(`Uploading ${files.length} file(s)...`);
     
     try {
-      const mediaIds: string[] = [];
-      
-      const firstAccountId = selectedAccounts[0];
-      if (!firstAccountId) {
-        toast.error('Please select an account first');
-        return;
-      }
-      
-      const account = accounts.find(a => a.id === firstAccountId);
-      if (!account || !account.composioUserId) {
-        toast.error('Account information incomplete');
-        return;
-      }
+      const uploadedFiles: Array<{ filePath: string; fileUrl: string; filename: string }> = [];
       
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         
         const uploadFormData = new FormData();
         uploadFormData.append('file', file);
-        uploadFormData.append('platform', account.platform);
-        uploadFormData.append('userId', account.composioUserId);
         
         const uploadRes = await fetch(process.env.NEXT_PUBLIC_APP_URL + '/api/media/upload', {
           method: 'POST',
@@ -122,10 +110,14 @@ export default function PublishPage() {
         }
         
         const uploadResult = await uploadRes.json();
-        mediaIds.push(uploadResult.mediaId);
+        uploadedFiles.push({
+          filePath: uploadResult.filePath,
+          fileUrl: uploadResult.fileUrl,
+          filename: uploadResult.filename,
+        });
       }
       
-      updateFormData(fieldName, mediaIds);
+      updateFormData(fieldName, uploadedFiles);
       toast.success(`${files.length} file(s) uploaded successfully`);
     } catch (error: any) {
       toast.error(error.message || 'Upload failed');
@@ -294,30 +286,97 @@ export default function PublishPage() {
     if (!validateForm()) return;
 
     setLoading(true);
+    
+    // 初始化进度
+    const initialProgress = selectedAccounts.map(id => {
+      const account = accounts.find(acc => acc.id === id);
+      return {
+        accountId: id,
+        accountName: account?.accountName || 'Unknown',
+        platform: account?.platform || 'unknown',
+        status: 'pending' as const,
+      };
+    });
+    
+    setPublishProgress(initialProgress);
+    setProgressDialogOpen(true);
+    
     try {
-      const res = await fetch(process.env.NEXT_PUBLIC_APP_URL + '/api/publish', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          accountIds: selectedAccounts,
-          contentType: contentType,
-          content: formData,
-        }),
-      });
+      // 逐个发布并更新进度
+      for (let i = 0; i < selectedAccounts.length; i++) {
+        const accountId = selectedAccounts[i];
+        
+        // 更新为发布中
+        setPublishProgress(prev => 
+          prev.map(p => p.accountId === accountId ? { ...p, status: 'publishing' } : p)
+        );
+        
+        try {
+          const res = await fetch(process.env.NEXT_PUBLIC_APP_URL + '/api/publish', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              accountIds: [accountId],
+              contentType: contentType,
+              content: formData,
+            }),
+          });
 
-      if (!res.ok) throw new Error('Publish failed');
-
-      const data = await res.json();
-      
-      toast.success(`Published to ${data.success} account(s)`);
-      if (data.failed > 0) {
-        toast.error(`Failed on ${data.failed} account(s)`);
+          const data = await res.json();
+          
+          if (data.success > 0) {
+            // 成功
+            const result = data.results?.[0];
+            setPublishProgress(prev => 
+              prev.map(p => p.accountId === accountId ? { 
+                ...p, 
+                status: 'success',
+                postUrl: result?.postUrl,
+              } : p)
+            );
+          } else {
+            // 失败
+            const result = data.results?.[0];
+            setPublishProgress(prev => 
+              prev.map(p => p.accountId === accountId ? { 
+                ...p, 
+                status: 'failed',
+                error: result?.error || 'Unknown error',
+              } : p)
+            );
+          }
+        } catch (error: any) {
+          // 请求失败
+          setPublishProgress(prev => 
+            prev.map(p => p.accountId === accountId ? { 
+              ...p, 
+              status: 'failed',
+              error: error.message || 'Request failed',
+            } : p)
+          );
+        }
       }
-
-      setStep(1);
-      setContentType(null);
-      setSelectedAccounts([]);
-      setFormData({});
+      
+      // 全部完成后显示汇总
+      const finalProgress = await new Promise<any[]>(resolve => {
+        setTimeout(() => {
+          setPublishProgress(prev => {
+            const successCount = prev.filter(p => p.status === 'success').length;
+            const failedCount = prev.filter(p => p.status === 'failed').length;
+            
+            if (successCount > 0) {
+              toast.success(`Published to ${successCount} account(s)`);
+            }
+            if (failedCount > 0) {
+              toast.error(`Failed on ${failedCount} account(s)`);
+            }
+            
+            resolve(prev);
+            return prev;
+          });
+        }, 500);
+      });
+      
     } catch (error: any) {
       toast.error(error.message || 'Publish failed');
     } finally {
@@ -565,5 +624,6 @@ export default function PublishPage() {
         )}
       </div>
     </div>
+
   );
 }

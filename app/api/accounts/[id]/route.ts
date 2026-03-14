@@ -2,74 +2,62 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, targetAccounts } from '@/lib/db';
 import { eq } from 'drizzle-orm';
 
-// GET /api/accounts/[id] - 获取单个账号
+// GET /api/accounts/[id] - 获取账号详情
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const params = await context.params;
+    const accountId = params.id;
+    
+    console.log('[Account Detail API] Request for account:', accountId);
+
     const account = await db
       .select()
       .from(targetAccounts)
-      .where(eq(targetAccounts.id, id))
+      .where(eq(targetAccounts.id, accountId))
       .limit(1);
 
-    if (!account.length) {
+    console.log('[Account Detail API] Query result:', account);
+
+    if (account.length === 0) {
+      console.log('[Account Detail API] Account not found');
       return NextResponse.json({ error: 'Account not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ account: account[0] });
-  } catch (error) {
-    console.error('Get account error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch account' },
-      { status: 500 }
-    );
-  }
-}
-
-// PUT /api/accounts/[id] - 更新账号
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const body = await request.json();
-    const updates = {
-      ...body,
-      updatedAt: new Date(),
+    const acc = account[0];
+    
+    // 手动序列化，确保所有字段都可以 JSON 化
+    const result = {
+      id: acc.id,
+      accountType: acc.accountType,
+      platform: acc.platform,
+      accountName: acc.accountName,
+      accountId: acc.accountId,
+      homepageUrl: acc.homepageUrl,
+      status: acc.status,
+      authMode: acc.authMode,
+      composioUserId: acc.composioUserId,
+      apiConfig: acc.apiConfig,
+      positioning: acc.positioning,
+      targetAudience: acc.targetAudience,
+      contentDirection: acc.contentDirection,
+      platformConfig: acc.platformConfig,
+      createdAt: acc.createdAt ? new Date(acc.createdAt).toISOString() : null,
+      updatedAt: acc.updatedAt ? new Date(acc.updatedAt).toISOString() : null,
+      facebookPageIds: acc.facebookPageIds || [],
+      facebookDefaultPageId: acc.facebookDefaultPageId || null,
+      instagramUserId: acc.instagramUserId || null,
     };
 
-    await db
-      .update(targetAccounts)
-      .set(updates)
-      .where(eq(targetAccounts.id, id));
+    console.log('[Account Detail API] Returning result:', result);
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Update account error:', error);
+    return NextResponse.json(result);
+  } catch (error: any) {
+    console.error('[Account Detail API] Error:', error);
     return NextResponse.json(
-      { error: 'Failed to update account' },
-      { status: 500 }
-    );
-  }
-}
-
-// DELETE /api/accounts/[id] - 删除账号
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    await db.delete(targetAccounts).where(eq(targetAccounts.id, id));
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Delete account error:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete account' },
+      { error: error.message || 'Internal server error' },
       { status: 500 }
     );
   }

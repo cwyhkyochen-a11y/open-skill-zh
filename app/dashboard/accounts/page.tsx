@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { PLATFORM_NAMES, PLATFORM_ICONS } from '@/lib/platform-fields';
 import { CheckCircle, Clock, XCircle, Plus, RefreshCw, Trash2, Loader2, ExternalLink } from 'lucide-react';
+import { AccountDetailDialog } from '@/components/AccountDetailDialog';
 
 interface Account {
   id: string;
@@ -37,6 +38,9 @@ export default function AccountsPage() {
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const [authUrl, setAuthUrl] = useState('');
   const [pollingAccountId, setPollingAccountId] = useState<string | null>(null);
+  const [refreshingAccountId, setRefreshingAccountId] = useState<string | null>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   
   const [newAccount, setNewAccount] = useState({
     accountName: '',
@@ -105,6 +109,33 @@ export default function AccountsPage() {
       loadAccounts();
     } catch (error: any) {
       toast.error(error.message || 'Failed to add account');
+    }
+  };
+
+
+  const handleRefreshStatus = async (accountId: string) => {
+    setRefreshingAccountId(accountId);
+    try {
+      const res = await fetch(process.env.NEXT_PUBLIC_APP_URL + '/api/accounts/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accountId }),
+      });
+
+      if (!res.ok) throw new Error('Failed to refresh status');
+
+      const data = await res.json();
+      
+      if (data.success) {
+        toast.success('Status refreshed successfully');
+        loadAccounts();
+      } else {
+        toast.error('Failed to refresh status');
+      }
+    } catch (error) {
+      toast.error('Failed to refresh status');
+    } finally {
+      setRefreshingAccountId(null);
     }
   };
 
@@ -279,8 +310,12 @@ export default function AccountsPage() {
             {accounts.map((account, index) => (
               <Card
                 key={account.id}
-                className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl hover-lift animate-fade-in"
+                className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl hover-lift animate-fade-in cursor-pointer"
                 style={{ animationDelay: `${index * 0.05}s` }}
+                onClick={() => {
+                  setSelectedAccountId(account.id);
+                  setDetailDialogOpen(true);
+                }}
               >
                 <CardHeader className="space-y-4">
                   <div className="flex items-start justify-between">
@@ -304,7 +339,10 @@ export default function AccountsPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleDeleteAccount(account.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteAccount(account.id);
+                      }}
                       className="h-8 w-8 p-0 rounded-lg hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600 dark:hover:text-red-400"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -316,6 +354,15 @@ export default function AccountsPage() {
           </div>
         )}
       </div>
+
+      {/* Account Detail Dialog */}
+      <AccountDetailDialog
+        accountId={selectedAccountId}
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+        onRefresh={loadAccounts}
+      />
     </div>
+
   );
 }

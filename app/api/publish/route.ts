@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 获取账号信息
+    // 获取账号信息（包括平台特定字段）
     console.log('[Publish API] Fetching accounts:', accountIds);
     const accounts = await db
       .select()
@@ -61,9 +61,9 @@ export async function POST(request: NextRequest) {
     // 对每个账号执行发布
     for (const account of accounts) {
       try {
-        console.log('[Publish API] Publishing to account:', account.accountName);
-        
-        // 使用发布路由器
+        console.log(`[Publish API] Publishing to account: ${account.accountName} (${account.platform})`);
+
+        // 传递完整账号信息，包括平台特定字段
         const result = await publishRouter.publish(
           {
             id: account.id,
@@ -72,12 +72,15 @@ export async function POST(request: NextRequest) {
             authMode: account.authMode as 'composio' | 'custom',
             composioUserId: account.composioUserId || undefined,
             apiConfig: account.apiConfig,
+            facebookPageIds: account.facebookPageIds,
+            facebookDefaultPageId: account.facebookDefaultPageId,
+            instagramUserId: account.instagramUserId,
           },
           contentType as ContentTypeId,
           content
         );
 
-        console.log('[Publish API] Result:', result);
+        console.log('[Publish API] Result:', JSON.stringify(result));
 
         publishResults.push({
           accountId: account.id,
@@ -100,7 +103,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log('[Publish API] All results:', publishResults);
+    console.log('[Publish API] All results:', JSON.stringify(publishResults));
 
     // 保存发布任务记录
     const taskStatus = publishResults.every((r) => r.status === 'success')

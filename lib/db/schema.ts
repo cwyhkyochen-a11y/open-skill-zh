@@ -18,6 +18,9 @@ export const targetAccounts = sqliteTable('target_accounts', {
   platformConfig: text('platform_config', { mode: 'json' }),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$default(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$default(() => new Date()),
+  facebookPageIds: text('facebook_page_ids', { mode: 'json' }).$default(() => '[]'),
+  facebookDefaultPageId: text('facebook_default_page_id'),
+  instagramUserId: text('instagram_user_id'),
 });
 
 // 发布任务表
